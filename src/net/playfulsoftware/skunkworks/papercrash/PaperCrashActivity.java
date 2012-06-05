@@ -1,12 +1,11 @@
 package net.playfulsoftware.skunkworks.papercrash;
 
 import android.app.Activity;
-import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 
 public class PaperCrashActivity extends Activity {
 	
-	private GLSurfaceView.Renderer renderer;
+	private GameSurfaceView.Renderer renderer;
 	
     /** Called when the activity is first created. */
     @Override
@@ -16,8 +15,20 @@ public class PaperCrashActivity extends Activity {
         
         renderer = new GameRenderer();
         
-        GLSurfaceView glView = (GLSurfaceView) findViewById(R.id.glSurface);
+        GameSurfaceView glView = (GameSurfaceView) findViewById(R.id.glSurface);
         
         glView.setRenderer(renderer);
+    }
+    
+    /** Called when paused. */
+    @Override
+    public void onPause() {
+    	super.onPause();
+    }
+    
+    /** Called when resumed. */
+    @Override
+    public void onResume() {
+    	super.onResume();
     }
 }

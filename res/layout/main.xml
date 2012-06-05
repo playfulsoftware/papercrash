@@ -4,12 +4,7 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <TextView
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/hello" />
-
-    <android.opengl.GLSurfaceView
+    <net.playfulsoftware.skunkworks.papercrash.GameSurfaceView
         android:id="@+id/glSurface"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
