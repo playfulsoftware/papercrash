@@ -7,14 +7,19 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import android.app.Activity;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView.Renderer;
 import android.opengl.Matrix;
+import android.util.Log;
 
 public class GameRenderer implements Renderer {
-	
+
+	private Activity parent;
+	private ResourceCompiler rc;
+
 	private FloatBuffer boxVB;
-	
+
 	private int mProgram;
 
 	// shader handles.
@@ -22,29 +27,16 @@ public class GameRenderer implements Renderer {
 	private int mPositionHandle;
 
 	private float boxCoords[] = {
-		0.5f, -0.5f, 0,
-		0.5f, 0.5f, 0,
-		-0.5f, -0.5f, 0,
-		-0.5f, 0.5f, 0
+			0.5f, -0.5f, 0,
+			0.5f, 0.5f, 0,
+			-0.5f, -0.5f, 0,
+			-0.5f, 0.5f, 0
 	};
 
 	private float[] mMVPMatrix = new float[16];
 	private float[] mMMatrix = new float[16];
 	private float[] mVMatrix = new float[16];
 	private float[] mPMatrix = new float[16];
-
-	private final String vertexShaderCode = 
-			"uniform mat4 uMVPMatrix;   \n" +
-			"attribute vec4 vPosition;  \n" +
-		    "void main() {              \n" +
-			"  gl_Position = uMVPMatrix * vPosition; \n" +
-		    "}                          \n";
-
-	private final String fragmentShaderCode =
-			//"precision medium float;   \n" +
-		    "void main() {              \n" +
-			"  gl_FragColor = vec4(0.63, 0.77, 0.22, 1.0); \n" +
-		    "}                          \n";
 
 	private void initBuffers() {
 		ByteBuffer vbb = ByteBuffer.allocateDirect(boxCoords.length * 4);
@@ -54,13 +46,9 @@ public class GameRenderer implements Renderer {
 		boxVB.position(0);
 	}
 
-	private int loadShader(int type, String shaderCode) {
-		int shader = GLES20.glCreateShader(type);
-
-		GLES20.glShaderSource(shader, shaderCode);
-		GLES20.glCompileShader(shader);
-
-		return shader;
+	public GameRenderer(Activity parent) {
+		this.parent = parent;
+		this.rc = new ResourceCompiler(this.parent);
 	}
 
 	@Override
@@ -86,9 +74,9 @@ public class GameRenderer implements Renderer {
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
 		// TODO Auto-generated method stub
 		GLES20.glViewport(0, 0, width, height);
-		
+
 		float ratio = (float) width / height;
-		
+
 		Matrix.frustumM(mPMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
 		Matrix.setLookAtM(mVMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0f);
 	}
@@ -101,8 +89,12 @@ public class GameRenderer implements Renderer {
 		// initialize the vertex buffers.
 		initBuffers();
 
-		int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-		int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+		int vertexShader = rc.createShader(R.raw.ambient, GLES20.GL_VERTEX_SHADER);
+		int fragmentShader = rc.createShader(R.raw.flat, GLES20.GL_FRAGMENT_SHADER);
+
+		if (vertexShader == -1 || fragmentShader == -1) {
+			Log.d("GameRenderer::onSurfaceCreated", "failed to load shaders");
+		}
 
 		mProgram = GLES20.glCreateProgram();
 		GLES20.glAttachShader(mProgram, vertexShader);

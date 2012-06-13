@@ -15,7 +15,7 @@ public class PaperCrashActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        renderer = new GameRenderer();
+        renderer = new GameRenderer(this);
         
         glView = (GameSurfaceView) findViewById(R.id.glSurface);
         
