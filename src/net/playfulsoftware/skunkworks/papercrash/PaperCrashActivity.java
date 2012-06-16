@@ -23,7 +23,7 @@ public class PaperCrashActivity extends Activity {
     /** Called when paused. */
     @Override
     public void onPause() {
-    	super.onPause();
+        super.onPause();
     }
     
     /** Called when resumed. */
