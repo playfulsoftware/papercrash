@@ -144,94 +144,6 @@ public class GameRenderer implements Renderer {
     
     }
     
-    private final String boardVS = 
-    	"varying vec3 position;" +
-		"void main()" +
-		"{" +
-		"	position = gl_Vertex.xyz;" +
-		"	gl_Position = ftransform();" +
-		"	gl_TexCoord[0] = -gl_MultiTexCoord0;" +
-    	"}";
-    
-    private final String vertexShaderCode = 
-            // This matrix member variable provides a hook to manipulate
-            // the coordinates of the objects that use this vertex shader
-            "uniform mat4 uMVPMatrix;   		\n" +
-            "uniform vec4 center;				\n" +
-            "uniform mat4 MVMatrix;   		\n" +
-            "uniform float radius;				\n" +
-            "uniform float uTicks;				\n" +
-            
-            "attribute vec4 vPosition;  		\n" +
-            
-            "vec4 lPos = vec4 (1.0, 2.0, -6.5, 1.0); \n" +
-            
-			"varying vec3 pos, cen, ldir;	\n" +
-			"varying float rad, ticks; \n" + 
-            "void main(){               		\n" +
-            
-				"ticks = uTicks;" +
-				"pos = (MVMatrix * vPosition).xyz; " +
-				"rad = radius; " +
-				"cen = (MVMatrix * center).xyz; " +
-				"ldir = (MVMatrix * lPos).xyz - pos; " +
-            	// the matrix must be included as a modifier of gl_Position
-            	"gl_Position = uMVPMatrix * vPosition; \n" +
-            
-            	
-            //	"position = (MVMatrix * vPosition).xyz;				\n" +
-            
-            "}  \n";
-        
-    private final String fragmentShaderCode = 
-           // "uniform float radius;				\n" +
-	        "precision mediump float;  \n" +
-	        "vec3 Specular = vec3 (1.0, 1.0, 1.0); " +
-	        "vec3 lDir = vec3 (3.0, -3.0, 8.0); " +
-	        "vec3 lCol = vec3 (0.3, 0.2, 0.8); " +
-    		"float shiny = 5.0; " +
-	        "varying vec3 pos, cen, ldir;	\n" +
-	        "varying float rad, ticks; \n" +
-	        "void main(){              \n" +
-	        //"	gl_FragColor = vec4(position.x, position.y, position.z, 1.0); " +
-	        "	vec3 color = vec3(0.63671875, 0.76953125, 0.22265625); " +
-	        "   vec3 amb = 0.2 * color; " +
-	        "	vec3 p = pos; " +
-	        "	if (distance(pos.xy, cen.xy) < rad) " +
-	        "	{ " +
-	        //" gl_FragColor = vec4 (0.63671875, 0.76953125, 0.22265625, 1.0); \n" +
-	//" float z = (radius * radius) - ((pos.x - cen.x) * (pos.x - cen.x)) - ((pos.y - cen.y) * (pos.y - cen.y)); " +
-	        		" float z = (rad * rad) - ((pos.x - cen.x) * (pos.x - cen.x)) - ((pos.y - cen.y) * (pos.y - cen.y)); " + 
-    				" z = sqrt (z) + cen.z; " +
-
-					" p.z = z; " + 
-					"vec3 normedP = normalize (p); " +
-    				"vec3 normal = normalize(p - cen); " +
-    				
-    				"vec3 u = normalize (reflect (normedP, normal)); " +				
-    				
-    				//"lCol.rgb *= vec3(0.5 * (1.0 + sin(ticks)), 0.5 * (1.0 + cos(ticks)), sin(ticks) * cos(ticks));" +
-    				"vec3 light_color = vec3(0.5 * (1.0 + sin(ticks / 8.0)), 0.5 * (1.0 + cos(ticks / 8.0)), sin(ticks / 8.0) * cos(ticks / 8.0)) * normal;" +
-    				"vec3 l = normalize (ldir); " +
-    				"vec3 r = normalize (reflect (l, normal)); " + 						
-    				"float ndl = dot (l, normal); " +
-    				"float intensity = 0.0; " +
-    				"intensity += 0.8 * clamp (ndl, 0.0, 1.0); " +
-    				"color *= (intensity * light_color); " +
-    				
-    				"float rde = max (0.0, dot (r, normedP)); " +
-    				"color += (pow(rde, shiny) * Specular); " +				
-    				
-    				"gl_FragColor = vec4 (amb + color, 1.0); " +
-	        "	} "													+
-	        "	else "												+
-	        "	{ "													+
-	        "		gl_FragColor = vec4 (0.0, 0.0, 0.0, 0.0); \n" +
-	        "	}													" +
-	        
-	        "}                         \n";
-	        
-    
     private int mProgram;
     private int maPositionHandle, radiusHandle, centerHandle, ticksHandle;
     
@@ -259,53 +171,19 @@ public class GameRenderer implements Renderer {
     }
     
     private int muMVPMatrixHandle, MVMatrixHandle;
-    private float[] mMVPMatrix = new float[16];
-    private float[] mMMatrix = new float[16];
-    private float[] mVMatrix = new float[16];
+
     private float[] mProjMatrix = new float[16];
     
     private Random rng;
     private Timer timer;
     private int ticks;
     private float scale;
-    
-	@Override
-	public void onDrawFrame(GL10 gl) {
-        
-        // Redraw background color
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        
-        // Add program to OpenGL environment
-        GLES20.glUseProgram(mProgram);
-        
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
-                 
-        // Prepare the triangle data
-        
-        for(int i = 0; i < spheres.length; i++)
-        {
-        	GLES20.glUniformMatrix4fv(MVMatrixHandle, 1, false, mVMatrix, 0);
-            GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
-            
-            //GLES20.glUniform1f(radiusHandle, 0.4f + (0.6f * scale));
-            
-            GLES20.glUniform1f(ticksHandle, ticks);
-        	GLES20.glUniform4f(centerHandle, spheres[i].center[0], spheres[i].center[1], spheres[i].center[2], 1.0f);
-        	GLES20.glUniform1f(radiusHandle, spheres[i].radius * scale);
-        	GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false, 12, spheres[i].getBuffer());
-        	GLES20.glEnableVertexAttribArray(maPositionHandle);
-        	
-        	// Draw the triangle
-            GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
-        }
         
         
 	private Activity parent;
 	private ResourceCompiler rc;
 
 	private FloatBuffer boxVB;
-
-	private int mProgram;
 
 	// shader handles.
 	private int mMVPMatrixHandle;
@@ -382,8 +260,8 @@ public class GameRenderer implements Renderer {
         // initialize the triangle vertex array
         initShapes();
         
-        int vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
-        int fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
+        int vertexShader = rc.createShader("vertex.vs", GLES20.GL_VERTEX_SHADER);
+        int fragmentShader = rc.createShader("sphere.fs", GLES20.GL_FRAGMENT_SHADER);
         
         mProgram = GLES20.glCreateProgram();             // create empty OpenGL Program
        
