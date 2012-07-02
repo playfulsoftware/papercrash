@@ -35,7 +35,10 @@ public class GameRenderer implements Renderer {
 			center = new float[3];
 			center[0] = cx; center[1] = cy; center[2] = cz;
 			
-			
+			Log.v("shaders", "center_x = " + (new Float(cx)).toString() + 
+							 ", center_y = " + (new Float(cy)).toString() +
+							 ", center_z = " + (new Float(cz)).toString() 
+			);
 			rect = new float[18];
 		}
 		
@@ -108,44 +111,10 @@ public class GameRenderer implements Renderer {
 
 	private FloatBuffer green_sphere_vb;
 	
-    private void initShapes(){
-        
-        float green_sphere_coords[] = {
-            // X, Y, Z
-        	
-        	-1.0f, 1.0f, 0.0f,
-        	-1.0f, -1.0f, 0.0f,
-        	1.0f, -1.0f, 0.0f,
-        	1.0f, -1.0f, 0.0f,
-        	1.0f, 1.0f, 0.0f,
-        	-1.0f, 1.0f, 0.0f
-        },
-        	board_coords[] = {
-        		
-        		-3.0f, 3.0f, 0.0f,
-            	-3.0f, -3.0f, 0.0f,
-            	3.0f, -3.0f, 0.0f,
-            	3.0f, -3.0f, 0.0f,
-            	3.0f, 3.0f, 0.0f,
-            	-3.0f, 3.0f, 0.0f	
-        		
-        };
-        
-        // initialize vertex Buffer for triangle  
-        ByteBuffer vbb = ByteBuffer.allocateDirect(
-                // (# of coordinate values * 4 bytes per float)
-                green_sphere_coords.length * 4); 
-        vbb.order(ByteOrder.nativeOrder());// use the device hardware's native byte order
-        green_sphere_vb = vbb.asFloatBuffer();  // create a floating point buffer from the ByteBuffer
-        green_sphere_vb.put(green_sphere_coords);    // add the coordinates to the FloatBuffer
-        green_sphere_vb.position(0);            // set the buffer to read the first coordinate
-    
-    }
     
     private int mProgram;
     private int maPositionHandle, radiusHandle, centerHandle, ticksHandle;
     
-    Sphere phear, smear;
     Sphere spheres[];
     
     private int muMVPMatrixHandle, MVMatrixHandle;
@@ -167,26 +136,13 @@ public class GameRenderer implements Renderer {
 	private int mMVPMatrixHandle;
 	private int mPositionHandle;
 
-	private float boxCoords[] = {
-			0.5f, -0.5f, 0,
-			0.5f, 0.5f, 0,
-			-0.5f, -0.5f, 0,
-			-0.5f, 0.5f, 0
-	};
-
 	private float[] mMVPMatrix = new float[16];
 	private float[] mMMatrix = new float[16];
 	private float[] mVMatrix = new float[16];
 	private float[] mPMatrix = new float[16];
 
-	private void initBuffers() {
-		ByteBuffer vbb = ByteBuffer.allocateDirect(boxCoords.length * 4);
-		vbb.order(ByteOrder.nativeOrder());
-		boxVB = vbb.asFloatBuffer();
-		boxVB.put(boxCoords);
-		boxVB.position(0);
-	}
-
+	private int surface_width, surface_height;
+	
 	public GameRenderer(Activity parent) {
 		this.parent = parent;
 		this.rc = new ResourceCompiler(this.parent);
@@ -209,13 +165,12 @@ public class GameRenderer implements Renderer {
 			GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
 			GLES20.glUniform1f(ticksHandle, ticks);
 			GLES20.glUniform4f(centerHandle, spheres[i].center[0], spheres[i].center[1], spheres[i].center[2], 1.0f);
-			GLES20.glUniform1f(radiusHandle, spheres[i].radius * scale);
+			GLES20.glUniform1f(radiusHandle, spheres[i].radius);
 			GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false, 12, spheres[i].getBuffer());
 			GLES20.glEnableVertexAttribArray(maPositionHandle);
-			// Draw the triangle
+			// Draw the triangles
 			GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
 		}
-
 	}
 
 	@Override
@@ -226,14 +181,19 @@ public class GameRenderer implements Renderer {
         
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
-        //Matrix.orthoM(mProjMatrix, 0, 0, width, 0, height, -1, 1);
+        //Matrix.frustumM(mProjMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+        Matrix.orthoM(mProjMatrix, 0, 0, width, 0, height, -1, 1);
         muMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
         MVMatrixHandle = GLES20.glGetUniformLocation(mProgram, "MVMatrix");
         
-        Matrix.setLookAtM(mVMatrix, 0, 0, 0, -5, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+        Matrix.setIdentityM(mVMatrix, 0);
+        //Matrix.setLookAtM(mVMatrix, 0, 0, 0, -5, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
         
+        surface_width = width; surface_height = height;
         Log.v("shaders", "surface width = " + width + ", surface height = " + height);
+        
+        spheres = new Sphere[1];
+        spheres[0] = new Sphere(surface_width / 2.0f, surface_height / 2.0f, 0.0f, surface_width / 16.0f);
 	}
 
 	@Override
@@ -241,12 +201,6 @@ public class GameRenderer implements Renderer {
 		
 		// Set the background frame color
         GLES20.glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        
-        // initialize the triangle vertex array
-        initShapes();
-        
-        //int vertexShader = rc.createShader("vertex.vs", GLES20.GL_VERTEX_SHADER);
-        //int fragmentShader = rc.createShader("sphere.fs", GLES20.GL_FRAGMENT_SHADER);
         
         int vertexShader = rc.createShader(R.raw.vertex, GLES20.GL_VERTEX_SHADER);
         int fragmentShader = rc.createShader(R.raw.sphere, GLES20.GL_FRAGMENT_SHADER);
@@ -268,19 +222,6 @@ public class GameRenderer implements Renderer {
         radiusHandle = GLES20.glGetUniformLocation(mProgram, "radius");
         centerHandle = GLES20.glGetUniformLocation(mProgram, "center");
         ticksHandle = GLES20.glGetUniformLocation(mProgram, "uTicks");
-        
-        Log.v("shaders", "center handle is " + centerHandle);
-        
-        phear = new Sphere(-2.0f, 0.0f, 0.0f, 0.5f);
-        smear = new Sphere(0.0f, 0.0f, 0.0f, 0.5f);
-        
-        spheres = new Sphere[6];
-        spheres[0] = new Sphere(-1.5f, 1.0f, 0.0f, 0.5f);
-        spheres[1] = new Sphere(0.0f, 1.0f, 0.0f, 0.5f);
-        spheres[2] = new Sphere(1.5f, 1.0f, 0.0f, 0.5f);
-        spheres[3] = new Sphere(-1.5f, -1.0f, 0.0f, 0.5f);
-        spheres[4] = new Sphere(0.0f, -1.0f, 0.0f, 0.5f);
-        spheres[5] = new Sphere(1.5f, -1.0f, 0.0f, 0.5f);
         
         rng = new Random();
         

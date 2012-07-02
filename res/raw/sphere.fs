@@ -24,11 +24,12 @@ void main()
 				
 		vec3 u = normalize (reflect (normedP, normal));
 				
-		vec3 light_color = vec3(0.5 * (1.0 + sin(ticks / 8.0)), 0.5 * (1.0 + cos(ticks / 8.0)), sin(ticks / 8.0) * cos(ticks / 8.0)) * normal;
+		vec3 light_color = vec3(0.5 * (1.0 + sin(ticks / 8.0)), 0.5 * (1.0 + cos(ticks / 8.0)), 0.5 * (1.0 + cos(ticks / 8.0))) * normal;
 		
 		vec3 l = normalize (ldir);
 		vec3 r = normalize (reflect (l, normal));
 								
+		/*
 		float ndl = dot (l, normal);
 		float intensity = 0.0;
 		
@@ -39,6 +40,8 @@ void main()
 		color += (pow(rde, shiny) * specular);				
 				
 		gl_FragColor = vec4 (amb + color, 1.0);
+		*/
+		gl_FragColor = vec4 (amb + (light_color * color), 1.0);
 	}												
 	else
 	{
