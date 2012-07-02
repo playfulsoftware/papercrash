@@ -103,9 +103,7 @@ public class GameRenderer implements Renderer {
 		public float radius;
 		
         public ByteBuffer vbb;
-        
-        
-		
+
 	}
 
 	private FloatBuffer green_sphere_vb;
@@ -149,26 +147,6 @@ public class GameRenderer implements Renderer {
     
     Sphere phear, smear;
     Sphere spheres[];
-	
-    private int loadShader(int type, String shaderCode){
-        
-        // create a vertex shader type (GLES20.GL_VERTEX_SHADER)
-        // or a fragment shader type (GLES20.GL_FRAGMENT_SHADER)
-        int shader = GLES20.glCreateShader(type); 
-        
-        // add the source code to the shader and compile it
-        GLES20.glShaderSource(shader, shaderCode);
-        GLES20.glCompileShader(shader);
-        
-        GLES20.glValidateProgram(shader);
-        
-        String
-        	stat_one = GLES20.glGetShaderInfoLog(shader);
-        
-        Log.v("shaders", type + " : " + stat_one);
-        
-        return shader;
-    }
     
     private int muMVPMatrixHandle, MVMatrixHandle;
 
@@ -222,15 +200,22 @@ public class GameRenderer implements Renderer {
 		// use the complied shader.
 		GLES20.glUseProgram(mProgram);
 
-		// apply model-view projection transform.
-		Matrix.multiplyMM(mMVPMatrix, 0, mPMatrix, 0, mVMatrix, 0);
-		GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+		Matrix.multiplyMM(mMVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
+		
+		// Prepare the triangle data
+		for(int i = 0; i < spheres.length; i++)
+		{
+			GLES20.glUniformMatrix4fv(MVMatrixHandle, 1, false, mVMatrix, 0);
+			GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+			GLES20.glUniform1f(ticksHandle, ticks);
+			GLES20.glUniform4f(centerHandle, spheres[i].center[0], spheres[i].center[1], spheres[i].center[2], 1.0f);
+			GLES20.glUniform1f(radiusHandle, spheres[i].radius * scale);
+			GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false, 12, spheres[i].getBuffer());
+			GLES20.glEnableVertexAttribArray(maPositionHandle);
+			// Draw the triangle
+			GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
+		}
 
-		// pass the triangle vertex data to the shader.
-		GLES20.glVertexAttribPointer(mPositionHandle, 3, GLES20.GL_FLOAT, false, 12, boxVB);
-		GLES20.glEnableVertexAttribArray(mPositionHandle);
-
-		GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
 	}
 
 	@Override
@@ -260,8 +245,14 @@ public class GameRenderer implements Renderer {
         // initialize the triangle vertex array
         initShapes();
         
-        int vertexShader = rc.createShader("vertex.vs", GLES20.GL_VERTEX_SHADER);
-        int fragmentShader = rc.createShader("sphere.fs", GLES20.GL_FRAGMENT_SHADER);
+        //int vertexShader = rc.createShader("vertex.vs", GLES20.GL_VERTEX_SHADER);
+        //int fragmentShader = rc.createShader("sphere.fs", GLES20.GL_FRAGMENT_SHADER);
+        
+        int vertexShader = rc.createShader(R.raw.vertex, GLES20.GL_VERTEX_SHADER);
+        int fragmentShader = rc.createShader(R.raw.sphere, GLES20.GL_FRAGMENT_SHADER);
+        
+        //int vertexShader = rc.createShader(R.raw.flat, GLES20.GL_VERTEX_SHADER);
+        //int fragmentShader = rc.createShader(R.raw.ambient, GLES20.GL_FRAGMENT_SHADER);
         
         mProgram = GLES20.glCreateProgram();             // create empty OpenGL Program
        

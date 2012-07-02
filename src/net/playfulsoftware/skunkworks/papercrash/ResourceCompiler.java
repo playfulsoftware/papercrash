@@ -65,7 +65,7 @@ public class ResourceCompiler implements Closeable {
 			return buildShader(buffer.toString(), shaderType);
 
 		} catch (IOException e) {
-			Log.e("GameStart", "Unable to load shader file");
+			Log.e("GameStart", "Unable to load shader file: " + fileName);
 			return -1;
 		}
 	}
