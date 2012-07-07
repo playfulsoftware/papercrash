@@ -7,5 +7,5 @@ Feel free to subdivide these tasks as needed.
 1. Update Shaders -- JS in progress
 
 ## Input
-1. Add Touch Interaction
+1. Add Touch Interaction -- CH in progress
 1. Add Gyro Support 
