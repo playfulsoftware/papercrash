@@ -142,7 +142,6 @@ public class GameRenderer implements Renderer {
 		{
 			done = false;
 			ticks = -1;
-			start[0] = end[0]; start[1] = end[1];
 			end = randomEnd(width, height);
 		}
 		
@@ -157,7 +156,7 @@ public class GameRenderer implements Renderer {
 			
 			float interp[] = new float[2];
 			
-			float t = Math.min(ticks * vel, 1.0f);
+			float t = Math.min((ticks * vel) / length(), 1.0f);
 			
 			if (t == 1.0f)
 			{
@@ -166,18 +165,18 @@ public class GameRenderer implements Renderer {
 			}
 			else
 			{
-				interp[0] = start[0] + (t * (end[0] - start[0] / length()));
-				interp[1] = start[1] + (t * (end[1] - start[1] / length()));
+				interp[0] = start[0] + (t * ((end[0] - start[0])));
+				interp[1] = start[1] + (t * ((end[1] - start[1])));
 			}
 			
 			//Log.v("shaders", start[0] + ", " + start[1] + ", t= " + t + ", " + done);
-			//Log.v("shaders", interp[0] + ", " + interp[1] + ", t= " + t + ", " + done);
+			Log.v("shaders", interp[0] + ", " + interp[1] + ", t= " + t + ", " + done);
 			return interp;
 		}
 		
 		boolean done = false;
 		int ticks = -1;
-		float vel = 1.0f / 60.0f;
+		float vel = 5;
 		float[] start, end;
 	}
 
@@ -341,12 +340,19 @@ public class GameRenderer implements Renderer {
 		{
 			for(int i = 0; i < spheres.length; i++)
 			{
+				if (spheres[i] == null)
+				{
+					continue;
+				}
+				
 				spheres[i].updateCenter(sphere_goals[i].tick());
 				
 				if (sphere_goals[i].done)
 				{
 					Log.v("shaders", "resetting!");
 					
+					sphere_goals[i].start[0] = spheres[i].center[0];
+					sphere_goals[i].start[1] = spheres[i].center[1];
 					sphere_goals[i].newGoal(surface_width - (2.0f * spheres[i].radius), 
 							surface_height - (2.0f * spheres[i].radius));
 				}
