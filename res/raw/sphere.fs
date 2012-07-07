@@ -29,7 +29,6 @@ void main()
 		vec3 l = normalize (ldir);
 		vec3 r = normalize (reflect (l, normal));
 								
-		/*
 		float ndl = dot (l, normal);
 		float intensity = 0.0;
 		
@@ -40,8 +39,7 @@ void main()
 		color += (pow(rde, shiny) * specular);				
 				
 		gl_FragColor = vec4 (amb + color, 1.0);
-		*/
-		gl_FragColor = vec4 (amb + (light_color * color), 1.0);
+		//gl_FragColor = vec4 (amb + (light_color * color), 1.0);
 	}												
 	else
 	{

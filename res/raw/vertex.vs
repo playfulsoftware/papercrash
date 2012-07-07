@@ -1,6 +1,9 @@
 uniform mat4 uMVPMatrix;
-uniform vec4 center;
 uniform mat4 MVMatrix;
+
+uniform vec4 center;
+uniform vec4 light_pos;
+
 uniform float radius;
 uniform float uTicks;
 
@@ -18,7 +21,8 @@ void main()
 	pos = (MVMatrix * vPosition).xyz;
 	rad = radius;
 	cen = (MVMatrix * center).xyz;
-	ldir = (MVMatrix * lPos).xyz - pos; 
+	//ldir = (MVMatrix * light_pos).xyz - pos; 
+	ldir = light_pos.xyz; 
 
 	gl_Position = uMVPMatrix * vPosition;
 }
