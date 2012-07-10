@@ -10,18 +10,10 @@ import java.util.TimerTask;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.opengl.GLSurfaceView;
-import android.opengl.GLSurfaceView.Renderer;
-import android.opengl.GLU;
-import android.opengl.GLUtils;
-import android.opengl.GLES20;
-import android.opengl.GLSurfaceView;
-import android.opengl.Matrix;
-import android.os.SystemClock;
 import android.app.Activity;
+import android.opengl.GLES20;
+import android.opengl.GLSurfaceView.Renderer;
+import android.opengl.Matrix;
 import android.util.Log;
 
 // TODO: OpenGL 1.0 is LAME
@@ -40,6 +32,8 @@ public class GameRenderer implements Renderer {
 							 ", center_z = " + (new Float(cz)).toString() 
 			);
 			rect = new float[18];
+			
+			texCoords = new float[12];
 		}
 		
 		public void updateCenter(float new_coords[])
@@ -56,26 +50,43 @@ public class GameRenderer implements Renderer {
 			rect[1] = center[1] - shamus;
 			rect[2] = center[2];
 			
+			texCoords[0] = 0.0f;
+			texCoords[1] = 0.0f;
+			
 			rect[3] = center[0] + shamus;
 			rect[4] = center[1] - shamus;
 			rect[5] = center[2];
+			
+			texCoords[2] = 1.0f;
+			texCoords[3] = 0.0f;
 			
 			rect[6] = center[0] - shamus;
 			rect[7] = center[1] + shamus;
 			rect[8] = center[2];
 			
+			texCoords[4] = 0.0f;
+			texCoords[5] = 1.0f;
+			
 			rect[9] = center[0] - shamus;
 			rect[10] = center[1] + shamus;
 			rect[11] = center[2];
+			
+			texCoords[6] = 0.0f;
+			texCoords[7] = 1.0f;
 			
 			rect[12] = center[0] + shamus;
 			rect[13] = center[1] - shamus;
 			rect[14] = center[2];
 			
+			texCoords[8] = 1.0f;
+			texCoords[9] = 0.0f;
+			
 			rect[15] = center[0] + shamus;
 			rect[16] = center[1] + shamus;
 			rect[17] = center[2];
 			
+			texCoords[10] = 1.0f;
+			texCoords[11] = 1.0f;
 						
 			return rect;
 		}
@@ -100,12 +111,28 @@ public class GameRenderer implements Renderer {
 	        return sphere_vb;
 		}
 		
-		public FloatBuffer sphere_vb;
+		public FloatBuffer getTexCoords() {
+			
+			tbb = ByteBuffer.allocateDirect(
+	                // (# of coordinate values * 4 bytes per float)
+	                texCoords.length * 4
+	        ); 
+			
+	        tbb.order(ByteOrder.nativeOrder());// use the device hardware's native byte order
+	        t_vb = tbb.asFloatBuffer();  // create a floating point buffer from the ByteBuffer
+	        t_vb.put(texCoords);    // add the coordinates to the FloatBuffer
+	        t_vb.position(0);            // set the buffer to read the first coordinate
+	        
+	        return t_vb;
+		}
+		
+		public FloatBuffer sphere_vb, t_vb;
+		public float texCoords[];
 		public float center[];
 		public float rect[];
 		public float radius;
 		
-        public ByteBuffer vbb;
+        public ByteBuffer vbb, tbb;
 
 	}
 	
@@ -176,20 +203,21 @@ public class GameRenderer implements Renderer {
 		
 		boolean done = false;
 		int ticks = -1;
-		float vel = 5;
+		float vel = 8;
 		float[] start, end;
 	}
 
 	private ByteBuffer background_bb;
 	private FloatBuffer background_vb;
 	
-    private int mProgram;
-    private int maPositionHandle, radiusHandle, centerHandle, ticksHandle;
+    private int mProgram, mBGProgram;
+    private int maPositionHandle, maBGPositionHandle, radiusHandle, centerHandle, ticksHandle, texCoordHandle;
     
+    Sphere back_bb;
     Sphere spheres[];
     SphereGoal sphere_goals[];
     
-    private int muMVPMatrixHandle, MVMatrixHandle;
+    private int muMVPMatrixHandle, muBGMVPMatrixHandle, MVMatrixHandle;
 
     private float[] mProjMatrix = new float[16];
     
@@ -198,7 +226,6 @@ public class GameRenderer implements Renderer {
     private int ticks;
     private float scale;
         
-        
 	private Activity parent;
 	private ResourceCompiler rc;
 
@@ -206,7 +233,7 @@ public class GameRenderer implements Renderer {
 
 	// shader handles.
 	private int mMVPMatrixHandle;
-	private int mPositionHandle, mLightHandle;
+	private int mPositionHandle, mBGPositionHandle, mLightHandle;
 
 	private float[] mMVPMatrix = new float[16];
 	private float[] mMMatrix = new float[16];
@@ -226,12 +253,23 @@ public class GameRenderer implements Renderer {
 	public void onDrawFrame(GL10 gl) {
 		// clear the screen.
 		GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
+		
+
+		Matrix.multiplyMM(mMVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
+		
+		/*
+		GLES20.glUseProgram(mBGProgram);
+		GLES20.glUniformMatrix4fv(muBGMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+		GLES20.glVertexAttribPointer(mBGPositionHandle, 3, GLES20.GL_FLOAT, false, 12, back_bb.getBuffer());
+		//GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 12, spheres[i].getTexCoords());
+		GLES20.glEnableVertexAttribArray(maBGPositionHandle);
+		// Draw the triangles
+		GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
+		*/
 
 		// use the complied shader.
 		GLES20.glUseProgram(mProgram);
 
-		Matrix.multiplyMM(mMVPMatrix, 0, mProjMatrix, 0, mVMatrix, 0);
-		
 		// Prepare the triangle data
 		for(int i = 0; i < spheres.length; i++)
 		{
@@ -242,6 +280,7 @@ public class GameRenderer implements Renderer {
 			GLES20.glUniform4f(mLightHandle, light_center[0], light_center[1], light_center[2], 1.0f);
 			GLES20.glUniform1f(radiusHandle, spheres[i].radius);
 			GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false, 12, spheres[i].getBuffer());
+			//GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 12, spheres[i].getTexCoords());
 			GLES20.glEnableVertexAttribArray(maPositionHandle);
 			// Draw the triangles
 			GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
@@ -261,30 +300,49 @@ public class GameRenderer implements Renderer {
         muMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
         MVMatrixHandle = GLES20.glGetUniformLocation(mProgram, "MVMatrix");
         
+        muBGMVPMatrixHandle = GLES20.glGetUniformLocation(mBGProgram, "uMVPMatrix");
+        
         Matrix.setIdentityM(mVMatrix, 0);
         //Matrix.setLookAtM(mVMatrix, 0, 0, 0, -5, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
         
         surface_width = width; surface_height = height;
         Log.v("shaders", "surface width = " + width + ", surface height = " + height);
         
-        spheres = new Sphere[1];
+        back_bb = new Sphere(surface_width / 2.0f, surface_height / 2.0f, 0.0f, surface_width);
+        
+        spheres = new Sphere[5];
         spheres[0] = new Sphere(surface_width / 2.0f, surface_height / 2.0f, 0.0f, surface_width / 16.0f);
         
-        sphere_goals = new SphereGoal[1];
+        sphere_goals = new SphereGoal[5];
         sphere_goals[0] = new SphereGoal(spheres[0].center, surface_width - (2 * spheres[0].radius), 
         								 surface_height - (2 * spheres[0].radius));
+        for(int i = 1; i < 5; i++)
+        {
+			float x_offset = (float) (Math.random() * width);
+			float y_offset = (float) (Math.random() * height);
+	        spheres[i] = new Sphere(surface_width / 2.0f + x_offset, surface_height / 2.0f + y_offset, 
+	        		0.0f, surface_width / 16.0f);
+        }
         
-        /*
+        for(int i = 1; i < 5; i++)
+        {
+			float x_offset = (float) (Math.random() * width);
+			float y_offset = (float) (Math.random() * height);
+	        sphere_goals[i] = new SphereGoal(spheres[i].center, surface_width - x_offset - (2 * spheres[0].radius), 
+	        								 surface_height + y_offset - (2 * spheres[0].radius));
+        }
+        
         light_center[0] = surface_width / 2.0f + 50.0f;
         light_center[1] = surface_height / 2.0f - 50.0f;
-        light_center[2] = -1.0f;
+        light_center[2] = -15.0f;
         light_center[3] = 1.0f;
-        */
+        
+        /*
         light_center[0] = 0.0f;
         light_center[1] = 100.0f;
         light_center[2] = -1.0f;
         light_center[3] = 1.0f;
-        
+        */
 	}
 
 	@Override
@@ -296,6 +354,8 @@ public class GameRenderer implements Renderer {
         int vertexShader = rc.createShader(R.raw.vertex, GLES20.GL_VERTEX_SHADER);
         int fragmentShader = rc.createShader(R.raw.sphere, GLES20.GL_FRAGMENT_SHADER);
         
+        //int background_texid = rc.createTexture(R.raw.greece_nx);
+        
         //int vertexShader = rc.createShader(R.raw.flat, GLES20.GL_VERTEX_SHADER);
         //int fragmentShader = rc.createShader(R.raw.ambient, GLES20.GL_FRAGMENT_SHADER);
         
@@ -304,6 +364,17 @@ public class GameRenderer implements Renderer {
         GLES20.glAttachShader(mProgram, vertexShader);   // add the vertex shader to program
         GLES20.glAttachShader(mProgram, fragmentShader); // add the fragment shader to program
         GLES20.glLinkProgram(mProgram);                  // creates OpenGL program executables
+        
+        vertexShader = rc.createShader(R.raw.flat, GLES20.GL_VERTEX_SHADER);
+        fragmentShader = rc.createShader(R.raw.ambient, GLES20.GL_FRAGMENT_SHADER);
+        
+        mBGProgram = GLES20.glCreateProgram();             // create empty OpenGL Program
+       
+        GLES20.glAttachShader(mBGProgram, vertexShader);   // add the vertex shader to program
+        GLES20.glAttachShader(mBGProgram, fragmentShader); // add the fragment shader to program
+        GLES20.glLinkProgram(mBGProgram);                  // creates OpenGL program executables
+        
+        maBGPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
         
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
         GLES20.glEnable(GLES20.GL_BLEND);
@@ -340,7 +411,7 @@ public class GameRenderer implements Renderer {
 		{
 			for(int i = 0; i < spheres.length; i++)
 			{
-				if (spheres[i] == null)
+				if (spheres[i] == null || sphere_goals[i] == null)
 				{
 					continue;
 				}
@@ -349,8 +420,6 @@ public class GameRenderer implements Renderer {
 				
 				if (sphere_goals[i].done)
 				{
-					Log.v("shaders", "resetting!");
-					
 					sphere_goals[i].start[0] = spheres[i].center[0];
 					sphere_goals[i].start[1] = spheres[i].center[1];
 					sphere_goals[i].newGoal(surface_width - (2.0f * spheres[i].radius), 

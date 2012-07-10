@@ -2,7 +2,7 @@ precision mediump float;
 
 vec3 specular = vec3 (1.0, 1.0, 1.0);
 
-float shiny = 5.0;
+float shiny = 11.0;
 
 varying vec3 pos, cen, ldir;
 varying float rad, ticks;
@@ -33,7 +33,8 @@ void main()
 		float intensity = 0.0;
 		
 		intensity += 0.8 * clamp (ndl, 0.0, 1.0);
-		color *= (intensity * light_color);
+		color *= intensity;
+		//color *= (intensity * light_color);
 				
 		float rde = max (0.0, dot (r, normedP));
 		color += (pow(rde, shiny) * specular);				
