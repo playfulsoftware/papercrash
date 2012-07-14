@@ -23,6 +23,8 @@ public class PaperCrashActivity extends Activity {
 		inputEventQueue = new LinkedList<InputEvent>();
 
 		renderer = new GameRenderer(this);
+		
+		((GameRenderer)renderer).setInputQueue(inputEventQueue);
 
 		glView = (GameSurfaceView) findViewById(R.id.glSurface);
 

@@ -3,6 +3,7 @@ package net.playfulsoftware.skunkworks.papercrash;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -172,6 +173,13 @@ public class GameRenderer implements Renderer {
 			end = randomEnd(width, height);
 		}
 		
+		void newGoal2(float x, float y)
+		{
+			done = false;
+			ticks = -1;
+			end[0] = x; end[1] = y;
+		}
+		
 		float length() {
 			
 			return dist(start, end);
@@ -230,6 +238,8 @@ public class GameRenderer implements Renderer {
 	private ResourceCompiler rc;
 
 	private FloatBuffer boxVB;
+	
+	private Queue<InputEvent> inputQueue;
 
 	// shader handles.
 	private int mMVPMatrixHandle;
@@ -247,6 +257,10 @@ public class GameRenderer implements Renderer {
 	public GameRenderer(Activity parent) {
 		this.parent = parent;
 		this.rc = new ResourceCompiler(this.parent);
+	}
+	
+	public void setInputQueue(Queue<InputEvent> queue) {
+		this.inputQueue = queue;
 	}
 
 	@Override
@@ -407,6 +421,14 @@ public class GameRenderer implements Renderer {
 				1.0f);
 		ticks++;
 		
+		// grab the next available input event, if available.
+		InputEvent ie = inputQueue.poll();
+		
+		if (ie != null) {
+			int i = rng.nextInt(sphere_goals.length);
+			sphere_goals[i].newGoal2(ie.getX(), ie.getY());
+		}
+		
 		if (spheres != null)
 		{
 			for(int i = 0; i < spheres.length; i++)
@@ -420,10 +442,10 @@ public class GameRenderer implements Renderer {
 				
 				if (sphere_goals[i].done)
 				{
-					sphere_goals[i].start[0] = spheres[i].center[0];
-					sphere_goals[i].start[1] = spheres[i].center[1];
-					sphere_goals[i].newGoal(surface_width - (2.0f * spheres[i].radius), 
-							surface_height - (2.0f * spheres[i].radius));
+					//sphere_goals[i].start[0] = spheres[i].center[0];
+					//sphere_goals[i].start[1] = spheres[i].center[1];
+					//sphere_goals[i].newGoal(surface_width - (2.0f * spheres[i].radius), 
+					//		surface_height - (2.0f * spheres[i].radius));
 				}
 			}
 		}
